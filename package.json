@@ -1,0 +1,42 @@
+{
+  "name": "context-aware-pr-reviewer",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Organization-defined code quality and security rating: org rules + deterministic scanners + security tools + AI/MCP evidence, aggregated into one explainable rating",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "cqr": "dist/src/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "cqr": "tsx src/cli.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "check": "npm run typecheck && npm run test",
+    "example": "tsx src/cli.ts assess --repo examples/sample-service --env demo",
+    "example:no-ai": "tsx src/cli.ts assess --repo examples/sample-service --no-ai",
+    "example:bench": "tsx src/cli.ts bench examples/acme/bench.yaml"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "yaml": "^2.9.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  },
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "files": [
+    "dist",
+    "rulesets",
+    "scripts"
+  ]
+}
