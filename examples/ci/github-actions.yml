@@ -1,0 +1,95 @@
+# Example: rate a repository on every pull request and on main.
+# Copy to .github/workflows/engineering-rating.yml in the repository to rate.
+#
+# Security notes (see docs/DESIGN.md, Security):
+# - The organization config comes from a separate, protected repository and is
+#   passed with --org-config, so a pull request can't weaken gates or scoring
+#   by editing its own cqr.config.yaml.
+# - Fork PRs get no secrets, so AI and API-backed connectors are skipped there
+#   and the rating uses deterministic checks and saved reports only.
+name: Engineering rating
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write     # upload SARIF to code scanning
+  pull-requests: write       # comment the rating on the PR
+
+jobs:
+  rate:
+    runs-on: ubuntu-latest
+    env:
+      # Secrets can't be read in `if:` directly; expose them through env.
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0     # diff mode and history need the base branch
+
+      - name: Check out the organization standard
+        uses: actions/checkout@v4
+        with:
+          repository: acme/engineering-standard
+          path: .org-standard
+          token: ${{ secrets.ORG_STANDARD_READ_TOKEN }}
+
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+
+      # ---- Tools produce reports; cqr reads them ----
+      - name: Semgrep
+        run: mkdir -p reports && pipx run semgrep scan --config auto --sarif --output reports/semgrep.sarif || true
+      - name: Snyk
+        if: env.SNYK_TOKEN != ''
+        run: npx snyk test --json > reports/snyk.json || true
+
+      - name: Install cqr
+        run: npm install -g context-aware-pr-reviewer   # or build from source
+
+      - name: Assess
+        id: assess
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          CQR_ENV: ci
+        run: |
+          SCOPE=""
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            SCOPE="--base origin/${{ github.base_ref }} --head HEAD"
+          fi
+          set +e
+          cqr assess $SCOPE \
+            --org-config .org-standard/cqr.config.yaml \
+            --format md,json,sarif --out-dir cqr-out --save \
+            --fail-on fail
+          echo "exit=$?" >> "$GITHUB_OUTPUT"
+          cat cqr-out/cqr-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: cqr-out/cqr-report.sarif
+          category: cqr
+
+      - name: Comment on the PR
+        if: github.event_name == 'pull_request'
+        env: { GH_TOKEN: '${{ github.token }}' }
+        run: gh pr comment ${{ github.event.pull_request.number }} --body-file cqr-out/cqr-report.md --edit-last || gh pr comment ${{ github.event.pull_request.number }} --body-file cqr-out/cqr-report.md
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: engineering-rating
+          path: |
+            cqr-out/
+            .cqr/runs/
+
+      - name: Enforce gates
+        if: steps.assess.outputs.exit != '0'
+        run: exit 1

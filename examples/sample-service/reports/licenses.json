@@ -1,0 +1,6 @@
+[
+  { "Name": "Flask", "Version": "2.0.1", "License": "BSD-3-Clause" },
+  { "Name": "requests", "Version": "2.25.0", "License": "Apache-2.0" },
+  { "Name": "PyYAML", "Version": "5.3", "License": "MIT" },
+  { "Name": "pdfgen-lite", "Version": "0.4.2", "License": "GPL-3.0-only" }
+]

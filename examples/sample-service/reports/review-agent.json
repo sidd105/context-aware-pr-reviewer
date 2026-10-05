@@ -1,0 +1,19 @@
+{
+  "agent": { "name": "pr-review-agent", "version": "2.3.0", "provider": "configured-provider", "model": "configured-model" },
+  "ruleset": { "id": "acme-engineering", "version": "1.4.2" },
+  "generated_at": "2026-10-05T09:00:00Z",
+  "rule_results": [
+    {
+      "rule_id": "ACME-SDLC-001",
+      "status": "failed",
+      "confidence": 0.9,
+      "findings": [
+        {
+          "message": "Payment settlement behaviour changed but CHANGELOG.md has no entry (the file does not exist).",
+          "remediation": "Add CHANGELOG.md and record the settlement change under Unreleased.",
+          "severity": "low"
+        }
+      ]
+    }
+  ]
+}

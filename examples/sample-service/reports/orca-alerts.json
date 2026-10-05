@@ -1,0 +1,28 @@
+{
+  "data": [
+    {
+      "alert_id": "orca-1001",
+      "type": "s3_bucket_public_read",
+      "description": "Storage bucket payments-exports is publicly readable",
+      "category": "Data at risk",
+      "state": { "risk_level": "high", "status": "open" },
+      "asset_name": "payments-exports",
+      "recommendation": "Block public access on the bucket and serve exports through signed URLs."
+    },
+    {
+      "alert_id": "orca-1002",
+      "type": "vm_outdated_os",
+      "description": "VM runs an end-of-life OS",
+      "category": "Vulnerabilities",
+      "state": { "risk_level": "high", "status": "open" },
+      "asset_name": "marketing-site-vm"
+    },
+    {
+      "alert_id": "orca-1003",
+      "type": "ssh_open_to_internet",
+      "description": "SSH open to the internet",
+      "state": { "risk_level": "medium", "status": "closed" },
+      "asset_name": "payments-api-vm"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+# Benchmark AI evaluators against Acme's own labelled examples.
+# Run: cqr bench examples/acme/bench.yaml
+repository: ../sample-service
+config: ../sample-service/cqr.config.yaml
+profiles: [recorded, recorded-alt]
+runs: 2
+line_tolerance: 2
+expected:
+  - { rule_id: ACME-API-001, file: app/api/handlers.py, line: 23, note: raw exception returned to client }
+  - { rule_id: acme.code.idempotent-payment-endpoints, file: app/api/handlers.py, line: 17 }
+  - { rule_id: PY-ZEN-012, file: app/services/notifier.py, line: 17, note: notify/notify_refund duplicate }
+  - { rule_id: PY-ZEN-011, status: passed, note: names are fine; any finding is a false positive }

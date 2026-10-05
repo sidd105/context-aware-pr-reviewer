@@ -1,0 +1,12 @@
+# Accepted risk. Reviewed like code; every waiver has an owner and an expiry.
+waivers:
+  - rule_id: ACME-LOG-001
+    paths: ["app/api/handlers.py"]
+    reason: Temporary debug output while PAY-1432 is investigated; removed with the fix.
+    approver: jordan.lee@acme.example
+    expires: "2027-03-31"
+
+  - rule_id: PY-ZEN-008
+    reason: Legacy signature kept for a partner integration that has since been retired.
+    approver: sam.ortiz@acme.example
+    expires: "2026-01-31"

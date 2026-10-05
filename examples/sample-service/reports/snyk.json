@@ -1,0 +1,55 @@
+{
+  "projectName": "payments-service",
+  "packageManager": "pip",
+  "displayTargetFile": "requirements.txt",
+  "vulnerabilities": [
+    {
+      "id": "SNYK-PYTHON-PYYAML-559098",
+      "title": "Arbitrary Code Execution",
+      "severity": "critical",
+      "packageName": "pyyaml",
+      "version": "5.3",
+      "from": ["payments-service@0.0.0", "pyyaml@5.3"],
+      "identifiers": { "CVE": ["CVE-2020-1747"], "CWE": ["CWE-20"] },
+      "cvssScore": 9.8,
+      "upgradePath": [false, "pyyaml@5.3.1"],
+      "fixedIn": ["5.3.1"],
+      "url": "https://security.snyk.io/vuln/SNYK-PYTHON-PYYAML-559098"
+    },
+    {
+      "id": "SNYK-PYTHON-FLASK-5490129",
+      "title": "Information Exposure",
+      "severity": "high",
+      "packageName": "flask",
+      "version": "2.0.1",
+      "from": ["payments-service@0.0.0", "flask@2.0.1"],
+      "identifiers": { "CVE": ["CVE-2023-30861"], "CWE": ["CWE-539"] },
+      "cvssScore": 7.5,
+      "upgradePath": [false, "flask@2.2.5"],
+      "fixedIn": ["2.2.5", "2.3.2"]
+    },
+    {
+      "id": "SNYK-PYTHON-FLASK-5490129",
+      "title": "Information Exposure",
+      "severity": "high",
+      "packageName": "flask",
+      "version": "2.0.1",
+      "from": ["payments-service@0.0.0", "flask-login@0.5.0", "flask@2.0.1"],
+      "identifiers": { "CVE": ["CVE-2023-30861"], "CWE": ["CWE-539"] },
+      "cvssScore": 7.5,
+      "fixedIn": ["2.2.5", "2.3.2"]
+    },
+    {
+      "id": "SNYK-PYTHON-REQUESTS-5595532",
+      "title": "Information Exposure",
+      "severity": "medium",
+      "packageName": "requests",
+      "version": "2.25.0",
+      "from": ["payments-service@0.0.0", "requests@2.25.0"],
+      "identifiers": { "CVE": ["CVE-2023-32681"], "CWE": ["CWE-200"] },
+      "cvssScore": 6.1,
+      "upgradePath": [false, "requests@2.31.0"],
+      "fixedIn": ["2.31.0"]
+    }
+  ]
+}

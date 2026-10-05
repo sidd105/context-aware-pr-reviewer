@@ -1,0 +1,20 @@
+# Rules only this repository needs, on top of Acme's standard.
+apiVersion: cqr/v1
+kind: RuleSet
+metadata:
+  id: payments-service
+  version: 0.1.0
+  owner: payments-team@acme.example
+  source: organization
+
+rules:
+  - id: PAY-LIC-001
+    title: Dependencies use licenses approved for distributed software
+    rationale: The payments SDK ships to partners, so copyleft dependencies need legal review first.
+    category: compliance
+    severity: high
+    evaluator: licenses.allowed
+    applies_to: { languages: [] }
+    params:
+      report: reports/licenses.json
+      allowed: [MIT, BSD-2-Clause, BSD-3-Clause, Apache-2.0, ISC, PSF-2.0]

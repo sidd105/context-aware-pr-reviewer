@@ -1,0 +1,34 @@
+# Repository config for payments-service. It inherits Acme's standard and adds
+# what only this repository knows: where its tool reports are, which cloud
+# assets it owns, and accepted risk.
+version: 1
+extends: [../acme/cqr.config.yaml]
+repository: payments-service
+
+# A third-party evaluator, and a ruleset that uses it.
+plugins: ["../plugins/license-plugin.mjs"]
+rulesets:
+  - path: rules/payments.yaml
+
+connectors:
+  snyk: { type: snyk, report: reports/snyk.json }
+  sonar: { type: sonar, report: reports/sonar-issues.json, url: "https://sonarcloud.io" }
+  orca: { type: orca, report: reports/orca-alerts.json, match_assets: ["payments-*"] }
+  semgrep: { type: sarif, report: reports/semgrep.sarif, category: security }
+  review-agent: { type: agent-report, report: reports/review-agent.json, trust: agentic }
+
+rule_overrides:
+  # Tightening is allowed.
+  - id: PY-ZEN-005
+    params: { max: 40 }
+    reason: Payments code is reviewed against a stricter function length.
+  # Weakening a locked Acme rule is not: this is ignored with a warning.
+  - id: ACME-MONEY-001
+    enabled: false
+    reason: Trying to switch off the float rule.
+
+waivers: ../acme/waivers.yaml
+
+# Ignored: scoring is locked by the organization config.
+scoring:
+  agentic_weight: 1.0

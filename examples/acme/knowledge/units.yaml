@@ -1,0 +1,33 @@
+# Organizational knowledge in context-engineering-sdlc's unit format. cqr reads
+# it as a rule source; the mapping in cqr.config.yaml decides which units are
+# checked deterministically and which go to an AI evaluator.
+units:
+  - id: baseline.sec.no-secrets-in-code
+    layer: operations
+    kind: security
+    level: must
+    title: No secrets in source control
+    body: |
+      Credentials, API keys, tokens and certificates must never be committed,
+      including in tests, fixtures or example config.
+    tags: [secrets, security]
+
+  - id: acme.code.timeouts-on-outbound-calls
+    layer: code
+    kind: coding-standard
+    level: must
+    title: Every outbound network call has a timeout
+    body: |
+      HTTP, database and queue clients are always called with an explicit
+      timeout so a slow dependency can't exhaust worker threads.
+    tags: [reliability, http]
+
+  - id: acme.code.idempotent-payment-endpoints
+    layer: code
+    kind: business-rule
+    level: should
+    title: Payment-creating endpoints are idempotent
+    body: |
+      Endpoints that create or capture payments accept an Idempotency-Key
+      header and return the original result when a request is retried.
+    tags: [payments, api]

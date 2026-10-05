@@ -1,0 +1,139 @@
+# Acme's organization-wide configuration. Repositories extend this file and
+# can add to it, but the keys in `locked` can only be changed here.
+version: 1
+organization: acme
+
+locked:
+  - gates
+  - scoring
+  - ai.data_policy
+  - ai.providers
+
+# ---- The engineering standard -------------------------------------------------
+rulesets:
+  - builtin: secure-baseline
+  - builtin: python-zen
+  - path: rulesets/acme-engineering.yaml
+  - path: rulesets/acme-agent.yaml
+  # Knowledge units written for context-engineering-sdlc, read as rules. The
+  # mapping decides how each one is checked: two are routed to deterministic
+  # evaluators, the rest go to the AI evaluator.
+  - type: context-units
+    path: knowledge
+    ruleset: acme-knowledge
+    version: 2026.10.0
+    mapping:
+      default_category: reliability
+      evaluators:
+        baseline.sec.no-secrets-in-code: { evaluator: secrets.scan }
+        acme.code.timeouts-on-outbound-calls:
+          evaluator: pattern
+          params:
+            pattern: 'requests\.(?:get|post|put|patch|delete)\((?![^)]*timeout=)'
+            message: Outbound HTTP call without a timeout
+  # The same knowledge can come live from the context-engineering-sdlc MCP server:
+  # - type: mcp
+  #   server: org-context
+  #   tool: get_context
+  #   arguments: { task: "Review the payments service", service: payments, budget: 8000 }
+
+# ---- Scoring ---------------------------------------------------------------------
+scoring:
+  # Order is precedence for exclusive dimensions. "Org Standards" is shared:
+  # it scores compliance across every Acme rule without taking rules away from
+  # the category dimensions.
+  dimensions:
+    - { id: ai, label: AI Assessment, weight: 10, select: { evidence_types: [agentic] } }
+    - { id: security, label: Security, weight: 30, select: { categories: [security] } }
+    - { id: architecture, label: Architecture, weight: 10, select: { categories: [architecture] } }
+    - { id: testing, label: Testing, weight: 10, select: { categories: [testing] } }
+    - { id: maintainability, label: Maintainability, weight: 5, select: { categories: [maintainability, documentation] } }
+    - { id: code_quality, label: Code Quality, weight: 15, select: {} }
+    - id: organization
+      label: Org Standards
+      weight: 20
+      mode: compliance
+      shared: true
+      select: { sources: [organization], evidence_types: [deterministic, tool] }
+  agentic_weight: 0.6
+  min_confidence: 0.5
+
+gates:
+  allow_agentic: false
+  rules:
+    - id: no-secrets
+      description: A detected secret fails the assessment
+      when: { tags: [secret], evidence_types: [deterministic, tool] }
+      action: { fail: true }
+    - id: critical-security-caps-at-C
+      description: A critical security finding caps the rating at C
+      when: { categories: [security], severity_at_least: critical, evidence_types: [deterministic, tool] }
+      action: { cap: C }
+    - id: mandatory-org-rule-caps-at-B
+      description: A failed mandatory Acme rule caps the rating at B
+      when: { sources: [organization], enforcement: [mandatory], evidence_types: [deterministic, tool] }
+      action: { cap: B }
+    - id: architecture-warn
+      description: Any architecture violation is called out
+      when: { categories: [architecture], evidence_types: [deterministic, tool] }
+      action: { warn: true }
+
+# ---- AI ---------------------------------------------------------------------------
+ai:
+  enabled: true
+  providers:
+    anthropic: { type: anthropic, api_key_env: ANTHROPIC_API_KEY, hosting: vendor }
+    local: { type: openai-compatible, base_url: "http://localhost:11434/v1", hosting: local }
+    recorded: { type: replay, file: ai-recordings.json, hosting: local }
+    recorded-alt: { type: replay, file: ai-recordings-alt.json, hosting: local }
+  models:
+    reasoning:
+      provider: anthropic
+      model: claude-opus-5-5
+      capabilities: { structured_output: true, tool_calling: true, reasoning: true, long_context: true }
+      context_tokens: 1000000
+      options: { effort: high }
+      cost_per_mtok: { input: 4, output: 20 }
+    fast:
+      provider: local
+      model: qwen2.5-coder:14b
+      capabilities: { structured_output: true }
+      context_tokens: 32000
+      temperature: 0
+    # Recorded responses for offline demos and the benchmark example.
+    recorded:
+      provider: recorded
+      model: recorded-responses
+      capabilities: { structured_output: true }
+    recorded-alt:
+      provider: recorded-alt
+      model: recorded-responses-alt
+      capabilities: { structured_output: true }
+  routing:
+    default: reasoning
+    tiers: { low: fast }
+    categories: { security: reasoning }
+    fallback: [fast]
+    environments:
+      # Offline demo and CI tests: replay recorded responses.
+      demo: { evaluators: { ai.review: recorded } }
+  data_policy:
+    send_source_code: true
+    redact_secrets: true
+    redact_pii: true
+    exclude_paths: ["**/.env", "**/.env.*", "**/*.pem", "**/secrets/**"]
+    allowed_providers: [anthropic, local, recorded, recorded-alt]
+    classifications:
+      # Infrastructure code may only go to models Acme hosts itself.
+      - { name: restricted, paths: ["app/infra/**"], allowed_hosting: [self-hosted, local] }
+
+mcp_servers:
+  arch-reviewer:
+    command: node
+    args: [server.mjs]
+    cwd: ../mcp-arch-reviewer
+    trust: agentic
+  # org-context:
+  #   command: node
+  #   args: [packages/mcp-server/dist/main.js, knowledge/acme]
+  #   cwd: /path/to/context-engineering-sdlc

@@ -1,0 +1,73 @@
+{
+  "paging": { "pageIndex": 1, "pageSize": 500, "total": 5 },
+  "issues": [
+    {
+      "key": "AY1-sql",
+      "rule": "pythonsecurity:S3649",
+      "component": "acme_payments:app/api/handlers.py",
+      "textRange": { "startLine": 12, "endLine": 12 },
+      "message": "Change this code to not construct SQL queries directly from user-controlled data.",
+      "type": "VULNERABILITY",
+      "severity": "BLOCKER",
+      "impacts": [{ "softwareQuality": "SECURITY", "severity": "HIGH" }],
+      "issueStatus": "OPEN",
+      "tags": ["cwe", "sql"]
+    },
+    {
+      "key": "AY1-cplx",
+      "rule": "python:S3776",
+      "component": "acme_payments:app/domain/payments.py",
+      "textRange": { "startLine": 20, "endLine": 20 },
+      "message": "Refactor this function to reduce its Cognitive Complexity from 21 to the 15 allowed.",
+      "type": "CODE_SMELL",
+      "severity": "CRITICAL",
+      "impacts": [{ "softwareQuality": "MAINTAINABILITY", "severity": "HIGH" }],
+      "issueStatus": "OPEN"
+    },
+    {
+      "key": "AY1-dup",
+      "rule": "python:S1192",
+      "component": "acme_payments:app/services/notifier.py",
+      "textRange": { "startLine": 11, "endLine": 11 },
+      "message": "Define a constant instead of duplicating this literal \"https://hooks.example.com/payments\" 2 times.",
+      "type": "CODE_SMELL",
+      "severity": "MINOR",
+      "impacts": [{ "softwareQuality": "MAINTAINABILITY", "severity": "LOW" }],
+      "issueStatus": "OPEN"
+    },
+    {
+      "key": "AY1-undef",
+      "rule": "python:S3827",
+      "component": "acme_payments:app/api/handlers.py",
+      "textRange": { "startLine": 23, "endLine": 23 },
+      "message": "\"sys\" is not defined. Import it before use.",
+      "type": "BUG",
+      "severity": "BLOCKER",
+      "impacts": [{ "softwareQuality": "RELIABILITY", "severity": "HIGH" }],
+      "issueStatus": "OPEN"
+    },
+    {
+      "key": "AY1-old",
+      "rule": "python:S1481",
+      "component": "acme_payments:app/infra/db.py",
+      "line": 4,
+      "message": "Remove the unused local variable.",
+      "type": "CODE_SMELL",
+      "severity": "MINOR",
+      "issueStatus": "FIXED",
+      "status": "CLOSED"
+    }
+  ],
+  "hotspots": [
+    {
+      "key": "AY1-hs-yaml",
+      "component": "acme_payments:app/api/handlers.py",
+      "line": 19,
+      "message": "Make sure that deserializing this YAML input is safe here.",
+      "vulnerabilityProbability": "HIGH",
+      "securityCategory": "insecure-conf",
+      "ruleKey": "python:S5135",
+      "status": "TO_REVIEW"
+    }
+  ]
+}

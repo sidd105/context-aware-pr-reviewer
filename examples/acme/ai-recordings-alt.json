@@ -1,0 +1,119 @@
+{
+  "responses": [
+    {
+      "match": {
+        "schema": "rule_evaluation",
+        "contains": [
+          "Evaluate each of these rules: PY-ZEN-011."
+        ]
+      },
+      "model": "qwen2.5-coder:14b",
+      "output": {
+        "results": [
+          {
+            "rule_id": "PY-ZEN-011",
+            "status": "failed",
+            "confidence": 0.6,
+            "summary": "Short parameter names.",
+            "findings": [
+              {
+                "file": "app/domain/payments.py",
+                "line": 20,
+                "quote": "def settle(payment, ledger, rules, retries=3):",
+                "message": "Parameter name rules is vague.",
+                "remediation": "Rename to settlement_rules.",
+                "confidence": 0.6
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "schema": "rule_evaluation",
+        "contains": [
+          "Evaluate each of these rules: PY-ZEN-012."
+        ]
+      },
+      "model": "qwen2.5-coder:14b",
+      "output": {
+        "results": [
+          {
+            "rule_id": "PY-ZEN-012",
+            "status": "failed",
+            "confidence": 0.85,
+            "summary": "notify and notify_refund duplicate the same notification logic.",
+            "findings": [
+              {
+                "file": "app/services/notifier.py",
+                "line": 17,
+                "quote": "requests.post(\"https://hooks.example.com/payments\", json={\"id\": payment.id}, timeout=5)",
+                "message": "notify_refund() repeats notify() line for line, so a change to the webhook has to be made twice.",
+                "remediation": "Have notify_refund() call a shared _post_notification(payment, kind) helper.",
+                "confidence": 0.85
+              },
+              {
+                "file": "app/services/notifier.py",
+                "line": 30,
+                "quote": "def send_notification(payment, retries=3):",
+                "message": "send_notification() reimplements retry logic found elsewhere.",
+                "remediation": "Reuse the shared retry helper.",
+                "confidence": 0.7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "schema": "rule_evaluation",
+        "contains": [
+          "Evaluate each of these rules: ACME-API-001."
+        ]
+      },
+      "model": "qwen2.5-coder:14b",
+      "output": {
+        "results": [
+          {
+            "rule_id": "ACME-API-001",
+            "status": "failed",
+            "confidence": 0.9,
+            "summary": "create_payment returns raw exception details to the client.",
+            "findings": [
+              {
+                "file": "app/api/handlers.py",
+                "line": 23,
+                "quote": "return str(sys.exc_info()), 500",
+                "message": "The error response is the raw exception tuple, which leaks internals and gives clients no stable error code. (It also fails: sys is never imported.)",
+                "remediation": "Catch specific exceptions and return problem(500, \"internal_error\", \"Something went wrong\") with the details logged server-side.",
+                "confidence": 0.9
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "match": {
+        "schema": "rule_evaluation",
+        "contains": [
+          "Evaluate each of these rules: acme.code.idempotent-payment-endpoints."
+        ]
+      },
+      "model": "qwen2.5-coder:14b",
+      "output": {
+        "results": [
+          {
+            "rule_id": "acme.code.idempotent-payment-endpoints",
+            "status": "passed",
+            "confidence": 0.7,
+            "summary": "No problems found.",
+            "findings": []
+          }
+        ]
+      }
+    }
+  ]
+}

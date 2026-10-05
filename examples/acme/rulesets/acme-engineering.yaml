@@ -1,0 +1,138 @@
+# Acme's definition of good software. Owned by the platform team, versioned,
+# and locked: repositories can tighten these rules but not weaken them.
+apiVersion: cqr/v1
+kind: RuleSet
+metadata:
+  id: acme-engineering
+  version: 1.4.2
+  owner: platform-engineering@acme.example
+  source: organization
+  locked: true
+  description: Acme engineering standards for Python services
+
+defaults:
+  enforcement: scored
+  applies_to:
+    languages: [python]
+    exclude: ["tests/**"]
+
+rules:
+  # ---- Architecture: the dependency direction is domain <- services <- api ----
+  - id: ACME-ARCH-001
+    title: The domain layer has no framework or infrastructure dependencies
+    rationale: Domain code is the part we test hardest and change least. Framework imports make it untestable without a running app.
+    category: architecture
+    severity: high
+    enforcement: mandatory
+    evaluator: imports.forbidden
+    applies_to: { paths: ["app/domain/**"] }
+    params:
+      to: ["app/api/**", "app/infra/**"]
+      modules: [flask, fastapi, requests, sqlalchemy, sqlite3, boto3]
+
+  - id: ACME-ARCH-002
+    title: API handlers don't talk to the database directly
+    rationale: Handlers go through repositories in app/infra so queries are reviewed, parameterised and reusable.
+    category: architecture
+    severity: high
+    enforcement: mandatory
+    evaluator: imports.forbidden
+    applies_to: { paths: ["app/api/**"] }
+    params:
+      modules: [sqlite3, psycopg2, sqlalchemy, pymysql]
+
+  # ---- Domain rules ----
+  - id: ACME-MONEY-001
+    title: Money is never a float
+    rationale: Binary floating point can't represent most decimal amounts. Use integer minor units or Decimal.
+    category: reliability
+    severity: high
+    enforcement: mandatory
+    evaluator: pattern
+    applies_to: { paths: ["app/**"] }
+    params:
+      pattern: '\b(?:amount|price|total|fee|balance)\w*\s*:\s*float\b'
+      message: Monetary value typed as float
+
+  # ---- Testing ----
+  - id: ACME-TEST-001
+    title: Domain and service modules have tests
+    category: testing
+    severity: high
+    evaluator: tests.required
+    applies_to: { paths: ["app/domain/**", "app/services/**"] }
+
+  # ---- Maintainability ----
+  - id: ACME-LOG-001
+    title: Use the logger, not print
+    category: maintainability
+    severity: low
+    evaluator: pattern
+    applies_to: { paths: ["app/**"] }
+    params: { pattern: '^\s*print\(' }
+    remediation: Use logging.getLogger(__name__) so output is structured and routable.
+
+  # ---- SDLC ----
+  - id: ACME-REPO-001
+    title: Repositories declare owners and a README
+    category: sdlc
+    severity: medium
+    evaluator: files.required
+    applies_to: { languages: [] }
+    params: { paths: ["README.md", "CODEOWNERS"] }
+
+  # ---- Security rules evaluated by tools: Acme's rule, the tool's evidence ----
+  - id: ACME-SEC-002
+    title: No high or critical vulnerabilities in dependencies
+    category: security
+    severity: high
+    enforcement: mandatory
+    evaluator: tool.findings
+    params: { tools: [snyk], severity_at_least: high }
+
+  - id: ACME-SEC-003
+    title: No open Sonar vulnerabilities
+    category: security
+    severity: medium
+    evaluator: tool.findings
+    params: { tools: [sonar], categories: [security], severity_at_least: medium }
+
+  - id: ACME-SEC-004
+    title: Deployed cloud assets have no high-risk alerts
+    category: security
+    severity: high
+    evaluator: tool.findings
+    params: { tools: [orca], severity_at_least: high }
+
+  # ---- Judgement calls, evaluated by AI ----
+  - id: ACME-API-001
+    title: API errors are structured problem responses
+    description: Handlers return errors as JSON with a stable error code and a safe message. They never return raw exception text, stack traces or internal identifiers to clients.
+    rationale: Raw exception text leaks internals and gives clients nothing stable to handle.
+    category: architecture
+    severity: medium
+    evaluator: ai.review
+    applies_to: { paths: ["app/api/**"] }
+    ai: { complexity: medium }
+    examples:
+      bad: ["except Exception as e:\n    return str(e), 500"]
+      good: ['except PaymentDeclined:\n    return problem(402, "payment_declined", "The card was declined.")']
+
+  # ---- Evaluated from an external agent's report ----
+  - id: ACME-SDLC-001
+    title: Behaviour changes are recorded in the changelog
+    category: sdlc
+    severity: low
+    evaluator: agent.findings
+    applies_to: { languages: [] }
+    params: { connector: review-agent }
+
+overrides:
+  # Acme is stricter than the Zen defaults on complexity.
+  - id: PY-ZEN-004
+    params: { max: 8 }
+    severity: high
+    reason: Acme services are on call 24/7; complex functions are an incident risk.
+  # Swallowed exceptions are mandatory at Acme.
+  - id: PY-ZEN-001
+    enforcement: mandatory

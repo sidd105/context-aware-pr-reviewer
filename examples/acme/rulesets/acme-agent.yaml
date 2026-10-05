@@ -1,0 +1,23 @@
+# Rules Acme delegates to an MCP server. The server provides evidence; Acme's
+# config decides how much to trust it (mcp_servers.arch-reviewer.trust).
+apiVersion: cqr/v1
+kind: RuleSet
+metadata:
+  id: acme-agent-architecture
+  version: 0.3.0
+  owner: architecture-guild@acme.example
+  source: organization
+  description: Architecture principles evaluated by the arch-reviewer MCP server
+
+defaults:
+  category: architecture
+  severity: medium
+  enforcement: scored
+  applies_to: { languages: [python], exclude: ["tests/**"] }
+
+rules:
+  - id: ACME-AGENT-ARCH-001
+    title: Services reach external systems only through infra adapters
+    description: Code in app/services and app/domain does not call HTTP clients, queues or cloud SDKs directly; it uses an adapter from app/infra that can be replaced in tests.
+    evaluator: mcp.assess
+    params: { server: arch-reviewer, tool: assess_rules }

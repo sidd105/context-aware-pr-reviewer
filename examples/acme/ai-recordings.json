@@ -1,0 +1,93 @@
+{
+  "responses": [
+    {
+      "match": { "schema": "rule_evaluation", "contains": ["Evaluate each of these rules: PY-ZEN-011."] },
+      "model": "claude-opus-5-5",
+      "output": {
+        "results": [
+          { "rule_id": "PY-ZEN-011", "status": "passed", "confidence": 0.75, "summary": "Names describe domain concepts (settle, apply_fees, refund_amount).", "findings": [] }
+        ]
+      }
+    },
+    {
+      "match": { "schema": "rule_evaluation", "contains": ["Evaluate each of these rules: PY-ZEN-012."] },
+      "model": "claude-opus-5-5",
+      "output": {
+        "results": [
+          {
+            "rule_id": "PY-ZEN-012",
+            "status": "failed",
+            "confidence": 0.85,
+            "summary": "notify and notify_refund duplicate the same notification logic.",
+            "findings": [
+              {
+                "file": "app/services/notifier.py",
+                "line": 17,
+                "quote": "requests.post(\"https://hooks.example.com/payments\", json={\"id\": payment.id}, timeout=5)",
+                "message": "notify_refund() repeats notify() line for line, so a change to the webhook has to be made twice.",
+                "remediation": "Have notify_refund() call a shared _post_notification(payment, kind) helper.",
+                "confidence": 0.85
+              },
+              {
+                "file": "app/services/notifier.py",
+                "line": 30,
+                "quote": "def send_notification(payment, retries=3):",
+                "message": "send_notification() reimplements retry logic found elsewhere.",
+                "remediation": "Reuse the shared retry helper.",
+                "confidence": 0.7
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "match": { "schema": "rule_evaluation", "contains": ["Evaluate each of these rules: ACME-API-001."] },
+      "model": "claude-opus-5-5",
+      "output": {
+        "results": [
+          {
+            "rule_id": "ACME-API-001",
+            "status": "failed",
+            "confidence": 0.9,
+            "summary": "create_payment returns raw exception details to the client.",
+            "findings": [
+              {
+                "file": "app/api/handlers.py",
+                "line": 23,
+                "quote": "return str(sys.exc_info()), 500",
+                "message": "The error response is the raw exception tuple, which leaks internals and gives clients no stable error code. (It also fails: sys is never imported.)",
+                "remediation": "Catch specific exceptions and return problem(500, \"internal_error\", \"Something went wrong\") with the details logged server-side.",
+                "confidence": 0.9
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "match": { "schema": "rule_evaluation", "contains": ["Evaluate each of these rules: acme.code.idempotent-payment-endpoints."] },
+      "model": "claude-opus-5-5",
+      "output": {
+        "results": [
+          {
+            "rule_id": "acme.code.idempotent-payment-endpoints",
+            "status": "failed",
+            "confidence": 0.65,
+            "summary": "POST /payments ignores the Idempotency-Key header.",
+            "findings": [
+              {
+                "file": "app/api/handlers.py",
+                "line": 17,
+                "quote": "def create_payment():",
+                "message": "create_payment() never reads an Idempotency-Key, so a retried request can create a second payment.",
+                "remediation": "Require Idempotency-Key and store the first response keyed by it.",
+                "confidence": 0.65
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
