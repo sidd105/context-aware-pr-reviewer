@@ -1,0 +1,80 @@
+# A language-agnostic secure-coding baseline. Deterministic checks only, so
+# every failure here is "this rule definitely failed".
+apiVersion: cqr/v1
+kind: RuleSet
+metadata:
+  id: secure-baseline
+  version: 1.0.0
+  owner: cqr-maintainers
+  source: industry
+  description: Secrets, dangerous calls and committed credentials
+
+defaults:
+  category: security
+  enforcement: scored
+
+rules:
+  - id: SEC-SECRETS-001
+    title: No secrets in source control
+    rationale: Committed credentials are exposed to everyone with repository access, forever, in history.
+    severity: critical
+    enforcement: mandatory
+    evaluator: secrets.scan
+    applies_to:
+      exclude: ["**/*.lock", "**/package-lock.json"]
+    tags: [secret]
+    remediation: Revoke the credential now, then load it at runtime from the approved secret store.
+
+  - id: SEC-FILES-001
+    title: No credential files committed
+    severity: high
+    evaluator: files.forbidden
+    params:
+      paths: ["**/.env", "**/*.pem", "**/*.p12", "**/id_rsa", "**/id_ed25519", "**/credentials.json"]
+    tags: [secret]
+
+  - id: SEC-PY-EVAL
+    title: No eval or exec on dynamic input
+    severity: high
+    evaluator: pattern
+    applies_to: { languages: [python], exclude: ["tests/**"] }
+    params: { pattern: '\b(?:eval|exec)\(' }
+    remediation: Parse the input explicitly (ast.literal_eval, json.loads) instead of executing it.
+
+  - id: SEC-PY-SHELL
+    title: No shell=True in subprocess calls
+    severity: high
+    evaluator: pattern
+    applies_to: { languages: [python] }
+    params: { pattern: 'subprocess\.\w+\(.*shell\s*=\s*True' }
+    remediation: Pass an argument list and leave shell=False.
+
+  - id: SEC-PY-YAML
+    title: yaml.load uses a safe loader
+    severity: medium
+    evaluator: pattern
+    applies_to: { languages: [python] }
+    params: { pattern: 'yaml\.load\((?![^)]*SafeLoader)' }
+    remediation: Use yaml.safe_load.
+
+  - id: SEC-PY-PICKLE
+    title: No unpickling of untrusted data
+    severity: medium
+    evaluator: pattern
+    applies_to: { languages: [python] }
+    params: { pattern: 'pickle\.loads?\(' }
+
+  - id: SEC-TLS-001
+    title: TLS certificate verification stays on
+    severity: high
+    evaluator: pattern
+    applies_to: { languages: [python, javascript, typescript] }
+    params: { pattern: 'verify\s*=\s*False|rejectUnauthorized\s*:\s*false' }
+
+  - id: SEC-SQL-001
+    title: SQL is parameterised, never built with string formatting
+    severity: high
+    evaluator: pattern
+    applies_to: { languages: [python] }
+    params: { pattern: '\.execute\(\s*(?:f["'']|["''][^"'']*["'']\s*(?:%|\+|\.format))' }
+    remediation: Use placeholders and pass values as parameters.
